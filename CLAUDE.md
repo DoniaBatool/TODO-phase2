@@ -208,3 +208,12 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.13+ + FastAPI, SQLModel, Pydantic, psycopg2-binary, uvicorn, python-dotenv (001-backend-api-foundation)
+- Neon Serverless PostgreSQL (cloud-hosted, connection pooling enabled) (001-backend-api-foundation)
+- Python 3.13+ + PyJWT 2.8+, passlib[bcrypt] 1.7+, python-multipart (for form data), email-validator (002-authentication-system)
+- Neon Serverless PostgreSQL (existing from Feature 1, extend User model) (002-authentication-system)
+
+## Recent Changes
+- 001-backend-api-foundation: Added Python 3.13+ + FastAPI, SQLModel, Pydantic, psycopg2-binary, uvicorn, python-dotenv
