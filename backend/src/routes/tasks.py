@@ -1,8 +1,9 @@
-"""Task CRUD API endpoints."""
+"""Task CRUD API endpoints (protected by JWT and ownership checks)."""
 
 from datetime import datetime
 from typing import List, Optional
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
@@ -12,20 +13,21 @@ from src.models import Task
 from src.schemas import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter(tags=["Tasks"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/tasks", response_model=TaskResponse, status_code=201)
 async def create_task(
     task_data: TaskCreate,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     Create a new task.
     
     Args:
         task_data: Task creation data
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
@@ -35,9 +37,9 @@ async def create_task(
         HTTPException: 400 if validation fails, 500 if database error
     """
     try:
-        # Create new task from request data (user_id from JWT)
+        # Always use authenticated user's ID (ignore any client-supplied user_id)
         task = Task(
-            user_id=user_id,
+            user_id=current_user_id,
             title=task_data.title,
             description=task_data.description,
         )
@@ -59,23 +61,23 @@ async def create_task(
 @router.get("/tasks", response_model=List[TaskResponse])
 async def list_tasks(
     completed: Optional[bool] = Query(default=None, description="Filter by completion status"),
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     List all tasks for the authenticated user with optional filtering by completion status.
     
     Args:
         completed: Optional filter for task completion status
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
         List[TaskResponse]: List of tasks matching filter for the authenticated user
     """
     try:
-        # Build query - filter by user_id first
-        statement = select(Task).where(Task.user_id == user_id)
+        # Build query scoped to authenticated user
+        statement = select(Task).where(Task.user_id == current_user_id)
         
         # Apply completion filter if provided
         if completed is not None:
@@ -95,15 +97,15 @@ async def list_tasks(
 @router.get("/tasks/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: int,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     Get a specific task by ID (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to retrieve
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
@@ -115,16 +117,22 @@ async def get_task(
     task = session.get(Task, task_id)
     
     if not task:
+        logger.warning("Task not found for user=%s id=%s", current_user_id, task_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task {task_id} not found"
         )
     
-    # Check ownership
-    if task.user_id != user_id:
+    if task.user_id != current_user_id:
+        logger.warning(
+            "Forbidden task access: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to access this task"
+            detail="Forbidden: Task does not belong to the authenticated user"
         )
     
     return task
@@ -134,8 +142,8 @@ async def get_task(
 async def update_task(
     task_id: int,
     task_data: TaskUpdate,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     Update an existing task (only if owned by authenticated user).
@@ -143,7 +151,7 @@ async def update_task(
     Args:
         task_id: Task ID to update
         task_data: Updated task data
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
@@ -155,16 +163,22 @@ async def update_task(
     task = session.get(Task, task_id)
     
     if not task:
+        logger.warning("Task not found for user=%s id=%s", current_user_id, task_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task {task_id} not found"
         )
     
-    # Check ownership
-    if task.user_id != user_id:
+    if task.user_id != current_user_id:
+        logger.warning(
+            "Forbidden task update: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to update this task"
+            detail="Forbidden: Task does not belong to the authenticated user"
         )
     
     try:
@@ -194,15 +208,15 @@ async def update_task(
 @router.patch("/tasks/{task_id}/complete", response_model=TaskResponse)
 async def toggle_task_completion(
     task_id: int,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     Toggle task completion status (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to toggle
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
@@ -214,16 +228,22 @@ async def toggle_task_completion(
     task = session.get(Task, task_id)
     
     if not task:
+        logger.warning("Task not found for user=%s id=%s", current_user_id, task_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task {task_id} not found"
         )
     
-    # Check ownership
-    if task.user_id != user_id:
+    if task.user_id != current_user_id:
+        logger.warning(
+            "Forbidden task toggle: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to modify this task"
+            detail="Forbidden: Task does not belong to the authenticated user"
         )
     
     try:
@@ -248,15 +268,15 @@ async def toggle_task_completion(
 @router.delete("/tasks/{task_id}", status_code=204)
 async def delete_task(
     task_id: int,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user_id: str = Depends(get_current_user),
 ):
     """
     Delete a task (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to delete
-        user_id: Authenticated user ID from JWT
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Raises:
@@ -265,16 +285,22 @@ async def delete_task(
     task = session.get(Task, task_id)
     
     if not task:
+        logger.warning("Task not found for user=%s id=%s", current_user_id, task_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task {task_id} not found"
         )
     
-    # Check ownership
-    if task.user_id != user_id:
+    if task.user_id != current_user_id:
+        logger.warning(
+            "Forbidden task delete: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to delete this task"
+            detail="Forbidden: Task does not belong to the authenticated user"
         )
     
     try:

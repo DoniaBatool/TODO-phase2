@@ -10,6 +10,7 @@ FastAPI backend for Todo application - Phase 2 Hackathon
 - Neon Serverless Database integration
 - Pydantic validation
 - Health check endpoint
+- Task endpoints now require JWT and are scoped to the authenticated user
 
 ## Setup
 
