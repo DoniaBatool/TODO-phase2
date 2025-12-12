@@ -15,7 +15,6 @@ class TaskCreate(BaseModel):
         max_length=1000,
         description="Task description"
     )
-    user_id: str = Field(description="User ID (required for Feature 1)")
     
     @field_validator("title")
     @classmethod
