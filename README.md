@@ -1,16 +1,23 @@
-# Todo Console App - Phase I ✅
+# Todo App - Phase I ✅ / Phase II ✅
 
 A command-line todo list manager built with Python following **Spec-Driven Development** principles.
 
 ## 🎯 Project Overview
 
-This is **Phase I (COMPLETE)** of the Todo Hackathon project, implementing a fully functional in-memory console application for managing daily tasks. The project follows Test-Driven Development (TDD), clean code principles, and **Spec-Kit Plus** workflow.
+This repo now includes **Phase I (console)** and **Phase II (full-stack web)** of the Todo Hackathon project. Phase I delivers the in-memory CLI app; Phase II upgrades to a multi-user web app with FastAPI, Next.js, and Neon Postgres. Both phases follow Spec-Driven Development, TDD, and Spec-Kit Plus.
 
 **GitHub Repository**: https://github.com/DoniaBatool/TODO-phase1
 
 ## ✨ Features
 
-### Phase I - Basic Level Features
+### Phase II - Full-Stack Web App (Current)
+- ✅ FastAPI backend with SQLModel + Neon Postgres
+- ✅ JWT authentication (signup/login/me)
+- ✅ Protected task API (user isolation & ownership checks)
+- ✅ Next.js (App Router) frontend with auth + task CRUD
+- ✅ Tailwind UI, loading/empty/error states
+
+### Phase I - Basic Level Features (Console)
 - ✅ **Add Task**: Create new todo items with title and description
 - ✅ **View Tasks**: Display all tasks with status indicators
 - ✅ **Update Task**: Modify existing task details
@@ -19,13 +26,32 @@ This is **Phase I (COMPLETE)** of the Todo Hackathon project, implementing a ful
 
 ## 🛠️ Technology Stack
 
-- **Language**: Python 3.13+
-- **Package Manager**: UV
-- **Development**: Claude Code + Spec-Kit Plus
-- **Testing**: pytest with coverage
-- **Storage**: In-memory (Python data structures)
+**Phase II**
+- Frontend: Next.js 16+ (App Router), TypeScript, Tailwind CSS
+- Backend: FastAPI, SQLModel, Pydantic
+- DB: Neon Serverless PostgreSQL
+- Auth: JWT (PyJWT), bcrypt, Better Auth compatible secret
+- Tooling: uv, npm, pytest, Alembic, Ruff
 
-## 📁 Project Structure
+**Phase I**
+- Language: Python 3.13+
+- Package Manager: UV
+- Development: Claude Code + Spec-Kit Plus
+- Testing: pytest with coverage
+- Storage: In-memory (Python data structures)
+
+## 📁 Project Structure (Phase II)
+
+```
+.
+├── backend/           # FastAPI app (JWT auth + protected tasks)
+├── frontend/          # Next.js App Router UI (auth + tasks CRUD)
+├── specs/             # Spec-Kit Plus docs for all phases/features
+├── history/prompts/   # Prompt History Records (PHRs)
+└── .specify/          # Spec-Kit templates and constitution
+```
+
+### Phase I (console) structure is described in SPEC-KIT-PLUS.md (retained for history).
 
 ```
 todo/

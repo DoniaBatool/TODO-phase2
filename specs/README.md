@@ -1,13 +1,12 @@
-# Todo Phase I - Spec-Kit Plus Documentation
+# Todo Phases I & II - Spec-Kit Plus Documentation
 
-**Project**: Todo Console Application  
-**Phase**: Phase I - In-Memory Python Console App  
-**Status**: ✅ Fully Documented with Spec-Kit Plus  
-**Last Updated**: 2025-12-09
+**Project**: Todo Application  
+**Phase**: Phase I (Console) ✅ / Phase II (Full-Stack Web) ✅  
+**Last Updated**: 2025-12-12
 
 ## Overview
 
-This directory contains complete Spec-Kit Plus documentation for all Phase I features. Each feature has comprehensive specification, implementation plan, task breakdown, contracts, and supporting documentation.
+This directory now contains Spec-Kit Plus documentation for **Phase I (console)** and **Phase II (full-stack web)**. Each feature includes spec, plan, tasks, contracts, checklists, data-model (where applicable), research (where applicable), and quickstart guides.
 
 ## Spec-Kit Plus Structure
 
@@ -128,6 +127,30 @@ Remove tasks permanently with confirmation.
 - Task shown before deletion
 - IDs never reused (important!)
 - Cancellation supported
+
+---
+
+## Phase II - Full-Stack Web (FastAPI + Next.js + Postgres)
+
+### 001: Backend API Foundation (Critical - P1)
+**Status**: ✅ Implemented & Documented  
+**Location**: `specs/001-backend-api-foundation/`  
+**Highlights**: FastAPI, SQLModel, Neon Postgres, health check, task CRUD, Alembic migrations.
+
+### 002: Authentication System (Critical - P1)
+**Status**: ✅ Implemented & Documented  
+**Location**: `specs/002-authentication-system/`  
+**Highlights**: Signup/Login/Me, JWT (PyJWT), bcrypt hashing, email validation, Better Auth–compatible secret, `/auth` routes.
+
+### 003: Protected Task API (Critical - P1)
+**Status**: ✅ Implemented & Documented  
+**Location**: `specs/003-protected-task-api/`  
+**Highlights**: JWT required on all task routes, user isolation, ownership checks, 401/403/404 semantics, updated contracts.
+
+### 004: Frontend Web App (Critical - P1)
+**Status**: ✅ Implemented & Documented  
+**Location**: `specs/004-frontend-web-app/`  
+**Highlights**: Next.js App Router, Tailwind UI, auth pages (signup/login), task CRUD UI, route guard, centralized API client with JWT injection and 401 handling.
 
 ---
 
