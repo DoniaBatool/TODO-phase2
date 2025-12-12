@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     debug: bool = False
     api_v1_prefix: str = "/api"
     
+    # CORS
+    cors_origins: str = "*"  # Comma-separated list of allowed origins, or "*" for all
+    
     # Authentication (Feature 2)
     better_auth_secret: str
     jwt_algorithm: str = "HS256"
@@ -39,6 +42,13 @@ class Settings(BaseSettings):
                 "BETTER_AUTH_SECRET must be at least 32 characters long. "
                 "Generate a strong secret with: python3 -c 'import secrets; print(secrets.token_urlsafe(32))'"
             )
+    
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS origins from comma-separated string."""
+        if self.cors_origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 # Global settings instance
