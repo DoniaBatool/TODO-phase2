@@ -1,12 +1,12 @@
-"""Task CRUD API endpoints (now protected by JWT and ownership checks)."""
+"""Task CRUD API endpoints (protected by JWT and ownership checks)."""
 
 from datetime import datetime
 from typing import List, Optional
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
-import logging
 from src.auth.dependencies import get_current_user
 from src.db import get_session
 from src.models import Task
@@ -27,6 +27,7 @@ async def create_task(
     
     Args:
         task_data: Task creation data
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
@@ -64,20 +65,21 @@ async def list_tasks(
     current_user_id: str = Depends(get_current_user),
 ):
     """
-    List all tasks with optional filtering by completion status.
+    List all tasks for the authenticated user with optional filtering by completion status.
     
     Args:
         completed: Optional filter for task completion status
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
-        List[TaskResponse]: List of tasks matching filter
+        List[TaskResponse]: List of tasks matching filter for the authenticated user
     """
     try:
         # Build query scoped to authenticated user
         statement = select(Task).where(Task.user_id == current_user_id)
         
-        # Apply filter if provided
+        # Apply completion filter if provided
         if completed is not None:
             statement = statement.where(Task.completed == completed)
         
@@ -99,17 +101,18 @@ async def get_task(
     current_user_id: str = Depends(get_current_user),
 ):
     """
-    Get a specific task by ID.
+    Get a specific task by ID (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to retrieve
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
         TaskResponse: Task data
     
     Raises:
-        HTTPException: 404 if task not found
+        HTTPException: 404 if task not found or not owned by user, 403 if owned by different user
     """
     task = session.get(Task, task_id)
     
@@ -121,7 +124,12 @@ async def get_task(
         )
     
     if task.user_id != current_user_id:
-        logger.warning("Forbidden task access: user=%s attempted task_id=%s owned_by=%s", current_user_id, task_id, task.user_id)
+        logger.warning(
+            "Forbidden task access: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Task does not belong to the authenticated user"
@@ -138,18 +146,19 @@ async def update_task(
     current_user_id: str = Depends(get_current_user),
 ):
     """
-    Update an existing task.
+    Update an existing task (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to update
         task_data: Updated task data
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
         TaskResponse: Updated task
     
     Raises:
-        HTTPException: 404 if task not found, 400 if validation fails
+        HTTPException: 404 if task not found, 403 if not owned by user, 400 if validation fails
     """
     task = session.get(Task, task_id)
     
@@ -161,7 +170,12 @@ async def update_task(
         )
     
     if task.user_id != current_user_id:
-        logger.warning("Forbidden task update: user=%s attempted task_id=%s owned_by=%s", current_user_id, task_id, task.user_id)
+        logger.warning(
+            "Forbidden task update: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Task does not belong to the authenticated user"
@@ -198,17 +212,18 @@ async def toggle_task_completion(
     current_user_id: str = Depends(get_current_user),
 ):
     """
-    Toggle task completion status.
+    Toggle task completion status (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to toggle
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Returns:
         TaskResponse: Updated task
     
     Raises:
-        HTTPException: 404 if task not found
+        HTTPException: 404 if task not found, 403 if not owned by user
     """
     task = session.get(Task, task_id)
     
@@ -220,7 +235,12 @@ async def toggle_task_completion(
         )
     
     if task.user_id != current_user_id:
-        logger.warning("Forbidden task toggle: user=%s attempted task_id=%s owned_by=%s", current_user_id, task_id, task.user_id)
+        logger.warning(
+            "Forbidden task toggle: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Task does not belong to the authenticated user"
@@ -252,14 +272,15 @@ async def delete_task(
     current_user_id: str = Depends(get_current_user),
 ):
     """
-    Delete a task.
+    Delete a task (only if owned by authenticated user).
     
     Args:
         task_id: Task ID to delete
+        current_user_id: Authenticated user ID from JWT
         session: Database session
     
     Raises:
-        HTTPException: 404 if task not found
+        HTTPException: 404 if task not found, 403 if not owned by user
     """
     task = session.get(Task, task_id)
     
@@ -271,7 +292,12 @@ async def delete_task(
         )
     
     if task.user_id != current_user_id:
-        logger.warning("Forbidden task delete: user=%s attempted task_id=%s owned_by=%s", current_user_id, task_id, task.user_id)
+        logger.warning(
+            "Forbidden task delete: user=%s attempted task_id=%s owned_by=%s",
+            current_user_id,
+            task_id,
+            task.user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Task does not belong to the authenticated user"
